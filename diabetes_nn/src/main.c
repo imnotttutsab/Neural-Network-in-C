@@ -6,7 +6,7 @@
 
 /* ---- hyperparameters: tweak these on Day 3 ---- */
 #define EPOCHS      1000
-#define LR          0.01
+#define LR          0.001
 #define TEST_RATIO  0.20
 
 static const char *FEATURE_NAMES[N_FEATURES] = {
