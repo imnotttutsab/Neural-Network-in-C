@@ -4,7 +4,7 @@
 #include <time.h>
 #include "nn.h"
 
-/* ------------------------------------------------------------------ helpers */
+/* helpers */
 
 static double sigmoid(double z)
 {
@@ -21,7 +21,7 @@ static double relu_deriv(double z)
     return z > 0.0 ? 1.0 : 0.01;    // always small gradient, never zero
 }
 
-/* ------------------------------------------------------------------ public API */
+/* public API */
 
 void nn_init(NeuralNet *net, double lr)
 {

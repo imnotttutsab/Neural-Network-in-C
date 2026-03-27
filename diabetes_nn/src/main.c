@@ -5,7 +5,7 @@
 #include "data.h"
 #include "nn.h"
 
-/* ---- hyperparameters: tweak these on Day 3 ---- */
+/* hyperparameters*/
 #define EPOCHS      3000
 #define LR          0.001
 #define TEST_RATIO  0.20
@@ -65,7 +65,7 @@ int main(void)
     srand((unsigned)time(NULL));   /* seed once here for reproducibility */
 
 
-    /* ------ 1. Load ------------------------------------------------- */
+    /* 1. Load */
     static Dataset full;           /* static: keeps large arrays off the stack */
     if (load_csv("data/diabetes.csv", &full) != 0) {
         fprintf(stderr, "Could not load data/diabetes.csv\n");
@@ -73,23 +73,23 @@ int main(void)
     }
 
 
-    /* ------ 2. Pre-process ------------------------------------------ */
+    /* 2. Pre-process */
     normalize_minmax(&full);       /* [0,1] per feature */
     shuffle_dataset(&full);        /* randomise before split */
 
 
-    /* ------ 3. Split ------------------------------------------------- */
+    /* 3. Split */
     static Dataset train, test;
     train_test_split(&full, &train, &test, TEST_RATIO);
 
 
-    /* ------ 4. Train ------------------------------------------------- */
+    /* 4. Train */
     NeuralNet net;
     nn_init(&net, LR);
     nn_train(&net, &train, EPOCHS);
 
 
-    /* ------ 5. Evaluate --------------------------------------------- */
+    /* 5. Evaluate */
     printf("\n--- Final results ---\n");
     printf("  Train  loss: %.4f   acc: %.1f%%\n",
            nn_loss(&net, &train), nn_accuracy(&net, &train) * 100.0);
@@ -100,7 +100,7 @@ int main(void)
     print_f1(&net, &test);
 
 
-    /* ------ 6. Inspect learned weights (feature importance proxy) --- */
+    /* 6. Inspect learned weights (feature importance proxy) */
     /* Row-wise L2 norm = overall importance of each feature across all hidden neurons */
     printf("\n--- Feature importance (L2 norm across hidden layer) ---\n");
     for (int k = 0; k < N_FEATURES; k++) {
@@ -112,7 +112,7 @@ int main(void)
     }
 
 
-    /* ------ 7. Save the trained model weights to a file ------------ */
+    /* 7. Save the trained model weights to a file */
     nn_save(&net, "model_weights.bin"); // model_weights.bin is a binary file that will contain the trained weights of the neural network. This allows you to save the state of the model after training, and later load it back for inference or further training without having to retrain from scratch.
                                         // model_weights.bin is the most dynamic outcome and model_weights_best.bin is the outcome that had 84% accuracy.
 
