@@ -32,8 +32,8 @@ void nn_init(NeuralNet *net, double lr)
      * Small random weights break symmetry; zero init would keep all
      * weights identical forever.
      */
-    double scale1 = 1.0 / sqrt((double)N_FEATURES);
-    double scale2 = 1.0 / sqrt((double)HIDDEN);
+    double scale1 = sqrt(2.0 / (double)N_FEATURES);  // He init for ReLU
+    double scale2 = sqrt(2.0 / (double)HIDDEN);  // He init for output layer (even though it's sigmoid, not ReLU, this is a common choice)
 
     for (int i = 0; i < HIDDEN; i++)
         {
@@ -80,6 +80,8 @@ void nn_backward(NeuralNet *net, double x[N_FEATURES],
 
     /* Output gradient */
     double dz2 = y_hat - y_true;
+    /* Clip gradients to prevent explosion */
+    dz2 = dz2 > CLIP ? CLIP : (dz2 < -CLIP ? -CLIP : dz2);
 
     /* Update W2 and b2 */
     for (int j = 0; j < HIDDEN; j++)
@@ -90,6 +92,8 @@ void nn_backward(NeuralNet *net, double x[N_FEATURES],
     for (int j = 0; j < HIDDEN; j++) {
         double dh  = dz2 * net->W2[j];
         double dz1 = dh * relu_deriv(net->z1[j]);
+        dz1 = dz1 > CLIP ? CLIP : (dz1 < -CLIP ? -CLIP : dz1);
+
 
         for (int k = 0; k < N_FEATURES; k++)
             net->W1[j][k] -= net->lr * dz1 * x[k];

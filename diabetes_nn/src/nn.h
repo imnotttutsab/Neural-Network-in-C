@@ -19,7 +19,11 @@
  *            b -= lr * dL/db
  */
 
-#define HIDDEN 8
+#define HIDDEN 4 // no. of neurons in the hidden layer
+
+/* Clip gradients to prevent explosion */
+#define CLIP 1.0
+
 
 typedef struct {
     // hidden layer
