@@ -64,6 +64,7 @@ int main(void)
 {
     srand((unsigned)time(NULL));   /* seed once here for reproducibility */
 
+
     /* ------ 1. Load ------------------------------------------------- */
     static Dataset full;           /* static: keeps large arrays off the stack */
     if (load_csv("data/diabetes.csv", &full) != 0) {
@@ -71,18 +72,22 @@ int main(void)
         return 1;
     }
 
+
     /* ------ 2. Pre-process ------------------------------------------ */
     normalize_minmax(&full);       /* [0,1] per feature */
     shuffle_dataset(&full);        /* randomise before split */
+
 
     /* ------ 3. Split ------------------------------------------------- */
     static Dataset train, test;
     train_test_split(&full, &train, &test, TEST_RATIO);
 
+
     /* ------ 4. Train ------------------------------------------------- */
     NeuralNet net;
     nn_init(&net, LR);
     nn_train(&net, &train, EPOCHS);
+
 
     /* ------ 5. Evaluate --------------------------------------------- */
     printf("\n--- Final results ---\n");
@@ -93,6 +98,7 @@ int main(void)
 
     print_confusion(&net, &test);
     print_f1(&net, &test);
+
 
     /* ------ 6. Inspect learned weights (feature importance proxy) --- */
     /* Row-wise L2 norm = overall importance of each feature across all hidden neurons */
@@ -105,8 +111,10 @@ int main(void)
         printf("  %-16s  %.4f\n", FEATURE_NAMES[k], norm);
     }
 
-    /* Tip: Glucose & BMI weights should be the largest — 
-       if they're not, try a lower learning rate or more epochs. */
+
+    /* ------ 7. Save the trained model weights to a file ------------ */
+    nn_save(&net, "model_weights.bin"); // model_weights.bin is a binary file that will contain the trained weights of the neural network. This allows you to save the state of the model after training, and later load it back for inference or further training without having to retrain from scratch.
+                                        // model_weights.bin is the most dynamic outcome and model_weights_best.bin is the outcome that had 84% accuracy.
 
     return 0;
 }
