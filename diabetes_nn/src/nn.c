@@ -11,42 +11,90 @@ static double sigmoid(double z)
     return 1.0 / (1.0 + exp(-z));
 }
 
+static double relu(double z)
+{
+    return z > 0.0 ? z : 0.0;
+}
+
+static double relu_deriv(double z)
+{
+    return z > 0.0 ? 1.0 : 0.0;
+}
+
 /* ------------------------------------------------------------------ public API */
 
 void nn_init(NeuralNet *net, double lr)
 {
     net->lr = lr;
-    net->b  = 0.0;
+    net->b2  = 0.0;
     /*
      * Xavier-style init: scale by 1/sqrt(N_FEATURES).
      * Small random weights break symmetry; zero init would keep all
-     * weights identical forever (no symmetry breaking to worry about
-     * in a single-layer net, but good habit).
+     * weights identical forever.
      */
-    double scale = 1.0 / sqrt((double)N_FEATURES);
-    for (int i = 0; i < N_FEATURES; i++)
-        net->W[i] = ((double)rand() / RAND_MAX - 0.5) * 2.0 * scale;
+    double scale1 = 1.0 / sqrt((double)N_FEATURES);
+    double scale2 = 1.0 / sqrt((double)HIDDEN);
+
+    for (int i = 0; i < HIDDEN; i++)
+        {
+            net->b1[i] = 0.0;
+            net->W2[i] = scale2 * 2.0 * ((double)rand() / RAND_MAX - 0.5);
+            for (int j = 0; j < N_FEATURES; j++)
+                net->W1[i][j] = scale1 * 2.0 * ((double)rand() / RAND_MAX - 0.5);
+        }
 }
 
 double nn_forward(NeuralNet *net, double x[N_FEATURES])
-{
-    double z = net->b;
-    for (int i = 0; i < N_FEATURES; i++)
-        z += net->W[i] * x[i];
-    return sigmoid(z);
+{ 
+    /* Stage 1: input -> hidden (ReLU) */
+    for (int j = 0; j < HIDDEN; j++) {
+        double z = net->b1[j];
+        for (int k = 0; k < N_FEATURES; k++)
+            z += net->W1[j][k] * x[k];
+        net->hidden[j] = relu(z);
+        net->z1[j] = z;   /* save pre-activation for finding derivatives later in backprop */
+    }
+
+    /* Stage 2: hidden -> output (sigmoid) */
+    double z2 = net->b2;
+    for (int j = 0; j < HIDDEN; j++)
+        z2 += net->W2[j] * net->hidden[j];
+    return sigmoid(z2);
 }
 
 void nn_backward(NeuralNet *net, double x[N_FEATURES],
                  double y_hat, double y_true)
 {
     /*
-     * dL/dz = y_hat - y_true   (BCE loss + sigmoid — derivation in nn.h)
-     * Then dL/dW[i] = dz * x[i],   dL/db = dz
-     */
-    double dz = y_hat - y_true;
-    for (int i = 0; i < N_FEATURES; i++)
-        net->W[i] -= net->lr * dz * x[i];
-    net->b -= net->lr * dz;
+    * OUTPUT LAYER GRADIENT: (Think of L likke a cost function we want to minimize)
+    * dL/dz2 = y_hat - y_true        (derived output - actual output)
+    * dL/dW2[j] = dz2 * hidden[j]   (hidden is the input neuron to this layer)
+    * dL/db2    = dz2
+    *
+    * HIDDEN LAYER GRADIENT (chain rule):
+    * dL/dhidden[j] = dz2 * W2[j]           (error flowing back through W2)
+    * dL/dz1[j]     = dh * relu'(z1[j])     (relu' = 1 if z1>0, else 0)
+    * dL/dW1[j][k]  = dz1 * x[k]            (x is the input to this layer)
+    * dL/db1[j]     = dz1
+    */
+
+    /* Output gradient */
+    double dz2 = y_hat - y_true;
+
+    /* Update W2 and b2 */
+    for (int j = 0; j < HIDDEN; j++)
+        net->W2[j] -= net->lr * dz2 * net->hidden[j];
+    net->b2 -= net->lr * dz2;
+
+    /* Hidden layer gradient */
+    for (int j = 0; j < HIDDEN; j++) {
+        double dh  = dz2 * net->W2[j];
+        double dz1 = dh * relu_deriv(net->z1[j]);
+
+        for (int k = 0; k < N_FEATURES; k++)
+            net->W1[j][k] -= net->lr * dz1 * x[k];
+        net->b1[j] -= net->lr * dz1;
+    }
 }
 
 void nn_train(NeuralNet *net, Dataset *ds, int epochs)

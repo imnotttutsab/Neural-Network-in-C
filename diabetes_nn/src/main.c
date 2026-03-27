@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -5,7 +6,7 @@
 #include "nn.h"
 
 /* ---- hyperparameters: tweak these on Day 3 ---- */
-#define EPOCHS      1000
+#define EPOCHS      2000
 #define LR          0.001
 #define TEST_RATIO  0.20
 
@@ -75,10 +76,15 @@ int main(void)
     print_confusion(&net, &test);
 
     /* ------ 6. Inspect learned weights (feature importance proxy) --- */
-    printf("\n--- Learned weights ---\n");
-    for (int i = 0; i < N_FEATURES; i++)
-        printf("  W[%-16s] = %+.4f\n", FEATURE_NAMES[i], net.W[i]);
-    printf("  bias               = %+.4f\n", net.b);
+    /* Row-wise L2 norm = overall importance of each feature across all hidden neurons */
+    printf("\n--- Feature importance (L2 norm across hidden layer) ---\n");
+    for (int k = 0; k < N_FEATURES; k++) {
+        double norm = 0.0;
+        for (int j = 0; j < HIDDEN; j++)
+            norm += net.W1[j][k] * net.W1[j][k];
+        norm = sqrt(norm);
+        printf("  %-16s  %.4f\n", FEATURE_NAMES[k], norm);
+    }
 
     /* Tip: Glucose & BMI weights should be the largest — 
        if they're not, try a lower learning rate or more epochs. */

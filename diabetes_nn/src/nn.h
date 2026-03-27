@@ -18,9 +18,18 @@
  * Update:    W -= lr * dL/dW
  *            b -= lr * dL/db
  */
+
+#define HIDDEN 8
+
 typedef struct {
-    double W[N_FEATURES]; /* one weight per input feature */
-    double b;             /* bias term */
+    // hidden layer
+    double W1[HIDDEN][N_FEATURES];
+    double b1[HIDDEN];
+    // output layer
+    double W2[HIDDEN];
+    double b2;
+    double z1[HIDDEN];   /* pre-activation hidden layer (for backprop) */
+    double hidden[HIDDEN]; /* cache for backprop */
     double lr;            /* learning rate */
 } NeuralNet;
 
